@@ -45,7 +45,7 @@ Given a tweet link, the app fetches all replies (reposts/retweets) and classifie
 - **Input Length**: 50 tokens
 - **Embedding**: Word2Vec (vector size = 50)
 - **Output**: Binary classification (Hate / Not Hate)
-- **Saved Format**: `.h5` model and `tokenizer.pkl`
+- **Saved Format**: `.h5` model(NLP), `model`(Word2Vec) and `tokenizer.pkl`
 
 ---
 
