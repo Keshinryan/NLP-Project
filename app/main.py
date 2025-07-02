@@ -1,12 +1,12 @@
-from fastapi import FastAPI, Query
-from fastapi.middleware.cors import CORSMiddleware
-import tensorflow as tf
+from fastapi import FastAPI, Query #type:ignore
+from fastapi.middleware.cors import CORSMiddleware #type:ignore
+import tensorflow as tf #type:ignore
 import pickle
-from keras.preprocessing.sequence import pad_sequences
+from keras.preprocessing.sequence import pad_sequences #type:ignore
 from app.preprocess import preprocess_text
 from dotenv import load_dotenv
 import os
-import tweepy
+import tweepy #type:ignore
 import re
 from datetime import datetime, timedelta
 
