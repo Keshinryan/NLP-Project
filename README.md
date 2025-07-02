@@ -141,13 +141,13 @@ https://x.com/someuser/status/123456789
 
 ## ✅ Next Steps
 
-- [x] Preprocess dataset (cleaning, stemming, alay normalization)
-- [x] Train Bi-LSTM with Word2Vec
-- [x] Export model (.h5) and tokenizer
-- [x] Build FastAPI backend
-- [x] Integrate with Twitter API v2
-- [x] Deploy with Docker
-- [ ] Build full frontend interface
+✅ Preprocess dataset (cleaning, stemming, alay normalization)
+✅ Train Bi-LSTM with Word2Vec
+✅ Export model (.h5) and tokenizer
+✅ Build FastAPI backend
+✅Integrate with Twitter API v2
+✅ Deploy with Docker
+✅ Build full frontend interface
 
 ---
 
