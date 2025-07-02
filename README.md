@@ -30,7 +30,7 @@ Given a tweet link, the app fetches all replies (reposts/retweets) and classifie
 ### 🔍 Preprocessing Steps:
 - Normalize alay words using a custom dictionary
 - Lowercasing
-- Remove repeated characters and duplicate words
+- Remove duplicate words
 - Stemming using PorterStemmer
 - Remove stopwords (Indonesian)
 - Tokenization and padding
