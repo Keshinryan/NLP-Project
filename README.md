@@ -153,7 +153,7 @@ https://x.com/someuser/status/123456789
 
 ## 👨‍💻 Author
 
-**Jason Patrick**  
+**Finggi Azhara, Jason Patrick ,Muhammad Rafli**  
 Natural Language Processing — Politeknik Caltex Riau
 
 ---
