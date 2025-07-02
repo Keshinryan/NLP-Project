@@ -70,11 +70,8 @@ pandas
 
 ```bash
 # Clone this repository
-git clone https://github.com/yourusername/nlp-hatespeech-detector.git
-cd nlp-hatespeech-detector
-
-# Install required packages
-pip install -r requirements.txt
+git clone https://github.com/Keshinryan/NLP-Project
+cd NLP-Project
 ```
 
 ---
