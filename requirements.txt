@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+tensorflow
+nltk
+pandas
+scikit-learn
+gensim
+contractions
+keras
+tweepy
+python-dotenv

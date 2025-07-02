@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Hate Speech Classifier</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      background-color: #f2f3f5;
+      font-family: 'Inter', sans-serif;
+      padding-top: 50px;
+    }
+
+    .container {
+      max-width: 600px;
+    }
+
+    .result-box {
+      margin-top: 20px;
+      padding: 20px 30px;
+      border-radius: 16px;
+      text-align: left;
+      border-left: 8px solid transparent;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      display: none;
+    }
+
+    .card-red {
+      background-color: rgba(255, 99, 71, 0.5); /* light coral */
+      border-left-color: rgba(255, 99, 71, 1);
+      color: #212529;
+    }
+
+    .card-green {
+      background-color: rgba(40, 167, 69, 0.5); /* light green */
+      border-left-color: rgba(40, 167, 69, 1);
+      color: #212529;
+    }
+
+    .card-warning {
+      background-color: rgba(255, 229, 100, 0.5);
+      border-left-color: rgba(255, 193, 7, 1);
+      color: #212529;
+    }
+
+    .card-error {
+      background-color: rgba(255, 169, 133, 0.5);
+      border-left-color: rgba(220, 53, 69, 0.6);
+      color: #212529;
+    }
+
+    .emoji {
+      font-size: 1.1rem;
+      margin-right: 6px;
+    }
+
+    .reset-time {
+      font-weight: 700;
+      color: #000;
+    }
+
+    .time-remaining {
+      font-weight: 600;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container text-center">
+    <h2 class="mb-4">🚨 Hate Speech Detection on Twitter/X</h2>
+
+    <form id="tweetForm">
+      <div class="mb-3">
+        <input type="url" id="tweetUrl" class="form-control" placeholder="Enter Tweet or X Post URL" required>
+      </div>
+      <button type="submit" class="btn btn-primary">Analyze</button>
+    </form>
+
+    <div id="result" class="result-box"></div>
+  </div>
+
+  <script>
+    const form = document.getElementById("tweetForm");
+    const resultBox = document.getElementById("result");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const tweetUrl = document.getElementById("tweetUrl").value;
+
+      resultBox.className = "result-box";
+      resultBox.style.display = "block";
+      resultBox.innerHTML = "⏳ Analyzing...";
+
+      try {
+        const response = await fetch(`http://localhost:8000/predict?tweet_url=${encodeURIComponent(tweetUrl)}`);
+        const data = await response.json();
+
+        if (data.error) {
+          if (data.error.includes("rate limit")) {
+            resultBox.classList.add("card-warning");
+            resultBox.innerHTML = `
+              <p><span class="emoji">⛔</span><strong>Twitter API rate limit active.</strong></p>
+              <p><span class="emoji">⏱️</span>Please wait. Limit resets at: <span class="reset-time">${new Date(data.reset_time).toLocaleTimeString()}</span></p>
+              <p><span class="emoji">🕒</span>Try again later.</p>
+            `;
+          } else {
+            resultBox.classList.add("card-error");
+            resultBox.innerHTML = `
+              <p><span class="emoji">❗</span><strong>${data.error}</strong></p>
+              <p><span class="emoji">📌</span>Please ensure the tweet has replies and the URL is correct.</p>
+            `;
+          }
+          return;
+        }
+
+        const hate = data.hate_speech_percent.toFixed(2);
+        const nonHate = data.non_hate_speech_percent.toFixed(2);
+        const replies = data.total_replies;
+
+        if (hate >= 50) {
+          resultBox.classList.add("card-red");
+        } else {
+          resultBox.classList.add("card-green");
+        }
+
+        resultBox.innerHTML = `
+          <p><span class="emoji">✅</span><strong>Prediction Result:</strong></p>
+          <p><span class="emoji">🧠</span><strong>Hate Speech:</strong> ${hate}%</p>
+          <p><span class="emoji">🧑‍🤝‍🧑</span><strong>Non-Hate Speech:</strong> ${nonHate}%</p>
+          <p><span class="emoji">📊</span><strong>Total Replies Analyzed:</strong> ${replies}</p>
+        `;
+      } catch (err) {
+        resultBox.classList.add("card-error");
+        resultBox.innerHTML = `
+          <p><span class="emoji">❌</span><strong>Error:</strong> Unable to fetch prediction.</p>
+          <p><span class="emoji">📡</span>Please check the API server is running.</p>
+        `;
+      }
+    });
+  </script>
+</body>
+</html>
