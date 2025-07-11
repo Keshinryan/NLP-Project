@@ -1,9 +1,9 @@
-from fastapi import FastAPI, Query
-from fastapi.middleware.cors import CORSMiddleware
-from keras.preprocessing.sequence import pad_sequences
+from fastapi import FastAPI, Query #type: ignore
+from fastapi.middleware.cors import CORSMiddleware #type: ignore
+from keras.preprocessing.sequence import pad_sequences #type: ignore
 from bs4 import BeautifulSoup
 from playwright.async_api import async_playwright
-import tensorflow as tf
+import tensorflow as tf #type: ignore
 import pickle
 import os
 import re
