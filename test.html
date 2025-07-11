@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Hate Speech Classifier (Static)</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f2f3f5;
+      font-family: 'Inter', sans-serif;
+      padding-top: 50px;
+    }
+
+    .container {
+      max-width: 700px;
+    }
+
+    .result-box {
+      margin-top: 20px;
+      padding: 20px 30px;
+      border-radius: 16px;
+      text-align: left;
+      border-left: 8px solid rgba(255, 99, 71, 1); /* red for demo */
+      background-color: rgba(255, 99, 71, 0.1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .emoji {
+      font-size: 1.1rem;
+      margin-right: 6px;
+    }
+
+    .reply-block {
+      margin-top: 12px;
+      padding: 10px;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    }
+
+    .reply-score {
+      font-size: 0.85rem;
+      color: #555;
+    }
+
+    .section-title {
+      font-weight: 600;
+      margin-top: 20px;
+      font-size: 1rem;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container text-center">
+    <h2 class="mb-4">🚨 Hate Speech Detection on Twitter/X</h2>
+
+    <div class="result-box text-start">
+      <p><span class="emoji">📝</span><strong>Tweet:</strong> "Politicians should focus more on real issues than social media drama."</p>
+      <p><span class="emoji">📊</span><strong>Total Replies Analyzed:</strong> 85</p>
+      <p><span class="emoji">🧠</span><strong>Hate Speech:</strong> 61.18%</p>
+      <p><span class="emoji">🧑‍🤝‍🧑</span><strong>Non-Hate Speech:</strong> 38.82%</p>
+
+      <div class="section-title">🔥 Top 5 Hate Speech Replies:</div>
+      <div class="reply-block"><strong>#1</strong> "You're such a dumb puppet it's disgusting." <div class="reply-score">Score: 0.96</div></div>
+      <div class="reply-block"><strong>#2</strong> "Go crawl back under the rock you came from." <div class="reply-score">Score: 0.93</div></div>
+      <div class="reply-block"><strong>#3</strong> "Shut up idiot, nobody asked you!" <div class="reply-score">Score: 0.91</div></div>
+      <div class="reply-block"><strong>#4</strong> "Just another clown in a suit." <div class="reply-score">Score: 0.88</div></div>
+      <div class="reply-block"><strong>#5</strong> "You are what's wrong with this country." <div class="reply-score">Score: 0.86</div></div>
+
+      <div class="section-title">🕊️ Top 5 Non-Hate Speech Replies:</div>
+      <div class="reply-block"><strong>#1</strong> "I actually agree with your point." <div class="reply-score">Score: 0.12</div></div>
+      <div class="reply-block"><strong>#2</strong> "This is a valid perspective. Thanks!" <div class="reply-score">Score: 0.18</div></div>
+      <div class="reply-block"><strong>#3</strong> "Nice to see someone being rational here." <div class="reply-score">Score: 0.20</div></div>
+      <div class="reply-block"><strong>#4</strong> "Interesting, didn’t think of it that way." <div class="reply-score">Score: 0.22</div></div>
+      <div class="reply-block"><strong>#5</strong> "Good point, though I disagree." <div class="reply-score">Score: 0.25</div></div>
+    </div>
+  </div>
+</body>
+</html>

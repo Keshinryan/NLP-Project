@@ -6,7 +6,6 @@
   <title>Hate Speech Classifier</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-
   <style>
     body {
       background-color: #f2f3f5;
@@ -15,7 +14,7 @@
     }
 
     .container {
-      max-width: 600px;
+      max-width: 700px;
     }
 
     .result-box {
@@ -29,13 +28,13 @@
     }
 
     .card-red {
-      background-color: rgba(255, 99, 71, 0.5); /* light coral */
+      background-color: rgba(255, 99, 71, 0.5);
       border-left-color: rgba(255, 99, 71, 1);
       color: #212529;
     }
 
     .card-green {
-      background-color: rgba(40, 167, 69, 0.5); /* light green */
+      background-color: rgba(40, 167, 69, 0.5);
       border-left-color: rgba(40, 167, 69, 1);
       color: #212529;
     }
@@ -62,8 +61,23 @@
       color: #000;
     }
 
-    .time-remaining {
+    .reply-block {
+      margin-top: 12px;
+      padding: 10px;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    }
+
+    .reply-score {
+      font-size: 0.85rem;
+      color: #555;
+    }
+
+    .section-title {
       font-weight: 600;
+      margin-top: 20px;
+      font-size: 1rem;
     }
   </style>
 </head>
@@ -119,6 +133,7 @@
         const hate = data.hate_speech_percent.toFixed(2);
         const nonHate = data.non_hate_speech_percent.toFixed(2);
         const replies = data.total_replies;
+        const tweetText = data.tweet_text;
 
         if (hate >= 50) {
           resultBox.classList.add("card-red");
@@ -126,17 +141,36 @@
           resultBox.classList.add("card-green");
         }
 
+        let topHateHTML = "";
+        let topNonHateHTML = "";
+
+        if (data.top_5_hate_replies && data.top_5_hate_replies.length > 0) {
+          topHateHTML += `<div class="section-title">🔥 Top 5 Hate Speech Replies:</div>`;
+          data.top_5_hate_replies.forEach((r, i) => {
+            topHateHTML += `<div class="reply-block"><strong>#${i + 1}</strong> ${r.text}<div class="reply-score">Score: ${r.score}</div></div>`;
+          });
+        }
+
+        if (data.top_5_non_hate_replies && data.top_5_non_hate_replies.length > 0) {
+          topNonHateHTML += `<div class="section-title">🕊️ Top 5 Non-Hate Speech Replies:</div>`;
+          data.top_5_non_hate_replies.forEach((r, i) => {
+            topNonHateHTML += `<div class="reply-block"><strong>#${i + 1}</strong> ${r.text}<div class="reply-score">Score: ${r.score}</div></div>`;
+          });
+        }
+
         resultBox.innerHTML = `
-          <p><span class="emoji">✅</span><strong>Prediction Result:</strong></p>
+          <p><span class="emoji">📝</span><strong>Tweet:</strong> <div class="reply-block"> ${tweetText} </div></p>
+          <p><span class="emoji">📊</span><strong>Total Replies Analyzed:</strong> ${replies}</p>
           <p><span class="emoji">🧠</span><strong>Hate Speech:</strong> ${hate}%</p>
           <p><span class="emoji">🧑‍🤝‍🧑</span><strong>Non-Hate Speech:</strong> ${nonHate}%</p>
-          <p><span class="emoji">📊</span><strong>Total Replies Analyzed:</strong> ${replies}</p>
+          ${topHateHTML}
+          ${topNonHateHTML}
         `;
       } catch (err) {
         resultBox.classList.add("card-error");
         resultBox.innerHTML = `
           <p><span class="emoji">❌</span><strong>Error:</strong> Unable to fetch prediction.</p>
-          <p><span class="emoji">📡</span>Please check the API server is running.</p>
+          <p><span class="emoji">📡</span>Please check if the FastAPI server is running.</p>
         `;
       }
     });

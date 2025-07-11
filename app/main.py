@@ -1,136 +1,144 @@
-from fastapi import FastAPI, Query #type:ignore
-from fastapi.middleware.cors import CORSMiddleware #type:ignore
-import tensorflow as tf #type:ignore
+from fastapi import FastAPI, Query
+from fastapi.middleware.cors import CORSMiddleware
+from keras.preprocessing.sequence import pad_sequences
+from bs4 import BeautifulSoup
+from playwright.async_api import async_playwright
+import tensorflow as tf
 import pickle
-from keras.preprocessing.sequence import pad_sequences #type:ignore
-from app.preprocess import preprocess_text
-from dotenv import load_dotenv
 import os
-import tweepy #type:ignore
 import re
-from datetime import datetime, timedelta
+from .preprocess import preprocess_text
 
-# Load environment variables
-load_dotenv()
-BEARER_TOKEN = os.getenv("TWITTER_BEARER_TOKEN")
+MAX_LEN = 50
 
-# Initialize Twitter API client
-client = tweepy.Client(bearer_token=BEARER_TOKEN)
+# Load model dan tokenizer
+model = tf.keras.models.load_model("app/model.h5")
+tokenizer = pickle.load(open("app/tokenizer.pkl", "rb"))
 
+# Init FastAPI
 app = FastAPI()
-
-# CORS setup
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Use specific origins in production
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Load model and tokenizer
-model = tf.keras.models.load_model("app/model.h5")
-tokenizer = pickle.load(open("app/tokenizer.pkl", "rb"))
-MAX_LEN = 50
-
-# Rate limit tracking
-last_twitter_call_time = None
-cooldown_duration = timedelta(minutes=15)
-
-
-def extract_tweet_id(tweet_url):
+# Extract tweet ID
+def extract_tweet_id(tweet_url: str):
     match = re.search(r"status/(\d+)", tweet_url)
     return match.group(1) if match else None
 
+# Classify reply text
+def classify_reply(text: str):
+    cleaned = preprocess_text(text)
+    seq = tokenizer.texts_to_sequences([cleaned])
+    padded = pad_sequences(seq, maxlen=MAX_LEN, padding="post")
+    prediction = float(model.predict(padded)[0][0])
+    return prediction
 
-def extract_username(tweet_url):
-    match = re.search(r"x\.com/([^/]+)/status/", tweet_url)
-    return match.group(1) if match else None
+# Scrape tweet + replies
+async def scrape_tweet_and_replies(tweet_url: str):
+    from playwright.async_api import async_playwright
+    from bs4 import BeautifulSoup
 
+    replies_set = set()
 
-def fetch_replies(tweet_url, limit=100):
-    global last_twitter_call_time
-    now = datetime.utcnow()
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        STATE_PATH = os.path.join(os.path.dirname(__file__), "state.json")
+        context = await browser.new_context(storage_state=STATE_PATH)
+        page = await context.new_page()
+        await page.goto(tweet_url, timeout=60000)
 
-    # Check 15-minute cooldown
-    if last_twitter_call_time and now - last_twitter_call_time < cooldown_duration:
-        reset_time = last_twitter_call_time + cooldown_duration
-        remaining = reset_time - now
-        return {
-            "error": "Twitter API rate limit active.",
-            "reset_time": reset_time.isoformat() + "Z",
-            "remaining_seconds": int(remaining.total_seconds()),
-            "message": f"Try again in {remaining.seconds // 60}m {remaining.seconds % 60}s"
-        }
+        last_count = 0
+        attempts = 0
 
-    tweet_id = extract_tweet_id(tweet_url)
-    username = extract_username(tweet_url)
-    if not tweet_id or not username:
-        return {"error": "Invalid tweet URL format."}
+        while len(replies_set) < 100 and attempts < 20:
+            # Scroll to bottom
+            await page.mouse.wheel(0, 3000)
+            await page.wait_for_timeout(2000)
 
-    query = f"conversation_id:{tweet_id} to:{username}"
-    replies = []
+            # Click all "Show more replies" buttons
+            buttons = await page.query_selector_all("div[role='button']")
+            for btn in buttons:
+                try:
+                    text = await btn.inner_text()
+                    if "Show" in text or "Lihat" in text:
+                        await btn.click()
+                        await page.wait_for_timeout(2000)
+                except:
+                    continue
 
-    try:
-        for tweet in tweepy.Paginator(
-            client.search_recent_tweets,
-            query=query,
-            tweet_fields=["text"],
-            max_results=100,
-        ).flatten(limit=limit):
-            replies.append(tweet.text)
+            # Extract text content
+            content = await page.content()
+            soup = BeautifulSoup(content, "html.parser")
+            divs = soup.find_all("div", {"data-testid": "tweetText"})
+            texts = [div.get_text(strip=True) for div in divs]
 
-        last_twitter_call_time = now  # Update if successful
+            # Store unique replies
+            for t in texts[1:]:
+                replies_set.add(t)
+                if len(replies_set) >= 100:
+                    break
 
-    except tweepy.errors.TooManyRequests:
-        last_twitter_call_time = now  # Still update to enforce cooldown
-        reset_time = last_twitter_call_time + cooldown_duration
-        remaining = reset_time - now
-        return {
-            "error": "Twitter API rate limit hit.",
-            "reset_time": reset_time.isoformat() + "Z",
-            "remaining_seconds": int(remaining.total_seconds()),
-            "message": f"Try again in {remaining.seconds // 60}m {remaining.seconds % 60}s"
-        }
+            # Break if no more replies are loading
+            if len(replies_set) == last_count:
+                attempts += 1
+            else:
+                attempts = 0  # reset attempts if new replies are found
 
-    except Exception as e:
-        print(f"Twitter API error: {e}")
-        return {"error": "Twitter API call failed."}
+            last_count = len(replies_set)
 
-    return replies
+        await browser.close()
 
+        if not texts:
+            raise RuntimeError("Gagal mengambil tweet dan reply")
+
+        tweet_text = texts[0]
+        replies = list(replies_set)
+
+        return tweet_text, replies
 
 @app.get("/")
 def home():
-    return {"message": "NLP Hate Speech API is running."}
-
+    return {"message": "API Hate Speech Twitter/X is running."}
 
 @app.get("/predict")
-def predict(tweet_url: str = Query(...)):
-    replies = fetch_replies(tweet_url, limit=100)
+async def predict(tweet_url: str = Query(..., description="Tweet URL from x.com")):
+    tweet_id = extract_tweet_id(tweet_url)
+    if not tweet_id:
+        return {"error": "Invalid tweet URL format."}
 
-    if isinstance(replies, dict) and "error" in replies:
-        return replies
+    try:
+        tweet_text, replies = await scrape_tweet_and_replies(tweet_url)
 
-    if not replies:
-        return {"error": "No replies found or invalid tweet URL."}
+        hate_replies = []
+        not_hate_replies = []
 
-    hate_count = 0
-    for reply in replies:
-        cleaned = preprocess_text(reply)
-        sequence = tokenizer.texts_to_sequences([cleaned])
-        padded = pad_sequences(sequence, maxlen=MAX_LEN, padding="post")
-        prediction = model.predict(padded)[0][0]
-        if prediction > 0.5:
-            hate_count += 1
+        for reply in replies[:100]:
+            score = classify_reply(reply)
+            if score > 0.5:
+                hate_replies.append((reply, score))
+            else:
+                not_hate_replies.append((reply, score))
 
-    total = len(replies)
-    hate_percentage = (hate_count / total) * 100
-    not_hate_percentage = 100 - hate_percentage
+        total = len(replies)
+        return {
+            "tweet_url": tweet_url,
+            "tweet_id": tweet_id,
+            "tweet_text": tweet_text,
+            "total_replies": total,
+            "hate_speech_percent": round(len(hate_replies) / total * 100, 2) if total else 0,
+            "non_hate_speech_percent": round(len(not_hate_replies) / total * 100, 2) if total else 0,
+            "top_5_hate_replies": [
+                {"text": r[0], "score": round(r[1], 3)} for r in sorted(hate_replies, key=lambda x: x[1], reverse=True)[:5]
+            ],
+            "top_5_non_hate_replies": [
+                {"text": r[0], "score": round(r[1], 3)} for r in sorted(not_hate_replies, key=lambda x: x[1])[:5]
+            ],
+        }
 
-    return {
-        "tweet_url": tweet_url,
-        "total_replies": total,
-        "hate_speech_percent": round(hate_percentage, 2),
-        "non_hate_speech_percent": round(not_hate_percentage, 2),
-    }
+    except Exception as e:
+        return {"error": str(e)}

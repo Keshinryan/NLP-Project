@@ -15,8 +15,8 @@
 
 ## 📌 Project Overview 
 
-This project builds a real-time **Natural Language Processing (NLP)** system that detects **hate speech in reposts or retweets** on Twitter (now X).  
-Given a tweet link, the app fetches all replies (reposts/retweets) and classifies whether they contain hate speech using a trained **Bi-LSTM model**.
+This project builds a real-time **Natural Language Processing (NLP)** system that detects **hate speech in reposts or replies** on Twitter (now X).  
+Given a tweet link, the app fetches all replies (including deep-level ones) and classifies whether they contain hate speech using a trained **Bi-LSTM model**.
 
 ---
 
@@ -45,7 +45,7 @@ Given a tweet link, the app fetches all replies (reposts/retweets) and classifie
 - **Input Length**: 50 tokens
 - **Embedding**: Word2Vec (vector size = 50)
 - **Output**: Binary classification (Hate / Not Hate)
-- **Saved Format**: `.h5` model(NLP), `model`(Word2Vec) and `tokenizer.pkl`
+- **Saved Format**: `.h5` model (NLP), `model` (Word2Vec), and `tokenizer.pkl`
 
 ---
 
@@ -61,9 +61,10 @@ gensim
 contractions
 fastapi
 uvicorn
-tweepy
 python-dotenv
 pandas
+playwright
+bs4
 ```
 
 ### Setup
@@ -76,23 +77,56 @@ cd NLP-Project
 
 ---
 
-## 🚀 Deploy
+## 🔐 Login and Cookie Save (Playwright)
 
-This app is deployed using **FastAPI** and Docker.
+To access replies from Twitter (X) in headless mode, you need to log in manually once using Playwright.
 
-### 🔐 Environment Setup
+### 📥 Step 1: Install Playwright
 
-1. Create a `.env` file in the root directory:
-   ```env
-   TWITTER_BEARER_TOKEN=your_twitter_api_bearer_token_here
-   ```
+Make sure Playwright is installed on your **local machine (not in Docker)**:
 
-2. Add `.env` to `.gitignore`:
-   ```
-   .env
-   ```
+```bash
+pip install playwright
+playwright install
+```
+📝 This will install the required browser binaries like Chromium.
 
 ---
+
+### 🗝️ Step 2: Run Login Script (Once)
+
+Run this script **once outside Docker** to store your Twitter session:
+
+ `login_save_cookies.py`
+
+```python
+from playwright.sync_api import sync_playwright
+import os
+
+STATE_PATH = "app/state.json"
+
+def main():
+    os.makedirs("app", exist_ok=True)
+    
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=False)
+        context = browser.new_context()
+        page = context.new_page()
+        
+        print("🔑 Silakan login ke X.com secara manual...")
+        page.goto("https://x.com/login")
+        input("✅ Tekan ENTER setelah selesai login...")
+        
+        context.storage_state(path=STATE_PATH)
+        print(f"✅ Session login berhasil disimpan ke: {STATE_PATH}")
+        browser.close()
+
+if __name__ == "__main__":
+    main()
+```
+
+## 🚀 Deploy
+This app is deployed using **FastAPI** and Docker.
 
 ### 🐳 Docker Instructions
 
@@ -103,11 +137,11 @@ This app is deployed using **FastAPI** and Docker.
    ```
 3. Run the container (development):
    ```bash
-   docker run -it --rm --env-file .env -p 8000:8000 nlp-hatespeech
+   docker run -it --rm -p 8000:8000 nlp-hatespeech
    ```
 4. Run the container (detached):
    ```bash
-   docker run -d --env-file .env -p 8000:8000 nlp-hatespeech
+   docker run -d -p 8000:8000 nlp-hatespeech
    ```
 
 ---

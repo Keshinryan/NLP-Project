@@ -1,11 +1,14 @@
 fastapi
 uvicorn
 tensorflow
+keras
 nltk
 pandas
 scikit-learn
 gensim
 contractions
-keras
-tweepy
+beautifulsoup4
+lxml
+playwright
+twikit
 python-dotenv
