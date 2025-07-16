@@ -97,7 +97,7 @@ playwright install
 
 Run this script **once outside Docker** to store your Twitter session:
 
- `login_save_cookies.py`
+ `python login_save_cookies.py`
 
 ```python
 from playwright.sync_api import sync_playwright

@@ -24,3 +24,4 @@ __pycache__/
 !app/deploy/
 !app/deploy/**
 
+app/state.json
